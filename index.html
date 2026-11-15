@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Crew Health Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: mission-control console. Sticky status strip, then body map + system brief, telemetry tiles, trend + daily routine, flags + surgeon report, hazard primer. */
+:root{
+  --bg:#E9EDF1; --panel:#FFFFFF; --panel-2:#F3F5F8; --ink:#13202C; --muted:#56667A; --line:#D2DAE3;
+  --accent:#C24E19; --accent-ink:#FFFFFF; --accent-soft:#F6E2D6;
+  --ok:#1B7C52; --caution:#A1650E; --alert:#BE2D28; --none:#8693A1;
+  --figure:#D5DCE4; --figure-line:#A9B5C2; --grid:#E3E8EE; --shadow:0 1px 2px rgba(19,32,44,.06),0 4px 14px rgba(19,32,44,.05);
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1218; --panel:#131B23; --panel-2:#18222D; --ink:#E3E9EF; --muted:#94A3B3; --line:#283542;
+  --accent:#EE7A3F; --accent-ink:#1A0C04; --accent-soft:#3A2418;
+  --ok:#3DBD84; --caution:#E2A642; --alert:#F2635C; --none:#6F7D8B;
+  --figure:#253241; --figure-line:#3A4B5D; --grid:#1F2A36; --shadow:none; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0C1218; --panel:#131B23; --panel-2:#18222D; --ink:#E3E9EF; --muted:#94A3B3; --line:#283542;
+  --accent:#EE7A3F; --accent-ink:#1A0C04; --accent-soft:#3A2418;
+  --ok:#3DBD84; --caution:#E2A642; --alert:#F2635C; --none:#6F7D8B;
+  --figure:#253241; --figure-line:#3A4B5D; --grid:#1F2A36; --shadow:none; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--panel)}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.01em}
+h2{font-size:1.15rem}
+h3{font-size:1.05rem}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1260px;margin:0 auto}
+
+/* top strip */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand h1{font-size:1.2rem;font-weight:700;letter-spacing:.03em}
+.patch{width:30px;height:30px;flex:none}
+.daynav{display:flex;align-items:center;gap:6px}
+.iconbtn{border:1px solid var(--line);background:var(--panel-2);border-radius:6px;width:30px;height:30px;cursor:pointer;display:grid;place-items:center}
+.iconbtn:hover{border-color:var(--accent)}
+.iconbtn:disabled{opacity:.4;cursor:default}
+.met{display:flex;flex-direction:column;line-height:1.15}
+.met b{font-family:var(--f-mono);font-weight:600;font-size:1rem}
+select{font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;max-width:100%}
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:7px;padding:7px 14px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.small{padding:4px 10px;font-size:.85rem}
+
+main .wrap{display:flex;flex-direction:column;gap:18px;padding-block:18px 56px}
+
+/* status banner */
+.banner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+.banner .light{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:1.3rem;color:var(--panel)}
+.banner .light.ok{background:var(--ok)} .banner .light.caution{background:var(--caution)} .banner .light.alert{background:var(--alert)} .banner .light.none{background:var(--none)}
+.banner h2{font-size:1.25rem}
+.banner .sub{color:var(--muted);font-size:.92rem}
+.xp{min-width:200px}
+.xpbar{height:8px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden;margin-top:5px}
+.xpbar i{display:block;height:100%;background:var(--accent)}
+@media (max-width:700px){.banner{grid-template-columns:auto minmax(0,1fr)}.xp{grid-column:1/-1;min-width:0}}
+
+.sample{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:.88rem;padding:8px 14px;border:1px dashed var(--caution);border-radius:8px;color:var(--ink);background:color-mix(in srgb,var(--caution) 8%,transparent)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+
+.g-body{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:18px}
+.g-trend{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px}
+.g-flags{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:900px){.g-body,.g-trend,.g-flags{grid-template-columns:1fr}}
+
+/* body map */
+.bodymap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.figure{width:100%;max-width:250px;height:auto}
+.figure .base{fill:var(--figure);stroke:var(--figure-line);stroke-width:1.2}
+.region{cursor:pointer;stroke:var(--figure-line);stroke-width:1.2;transition:fill .2s}
+.region.ok{fill:color-mix(in srgb,var(--ok) 55%,var(--figure))}
+.region.caution{fill:color-mix(in srgb,var(--caution) 65%,var(--figure))}
+.region.alert{fill:color-mix(in srgb,var(--alert) 70%,var(--figure))}
+.region.none{fill:color-mix(in srgb,var(--none) 35%,var(--figure))}
+.region:hover{filter:brightness(1.1)}
+.region.sel{stroke:var(--ink);stroke-width:2.6}
+.region:focus{outline:none}
+.region:focus-visible{stroke:var(--accent);stroke-width:3}
+.region.alert.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){.region.alert.pulse{animation:none}}
+.syslist{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+.sysbtn{display:flex;align-items:center;gap:8px;text-align:left;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel-2);cursor:pointer;font-size:.88rem;min-width:0}
+.sysbtn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sysbtn:hover{border-color:var(--accent)}
+.sysbtn.sel{border-color:var(--ink);background:var(--panel)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--none)}
+.dot.ok{background:var(--ok)} .dot.caution{background:var(--caution)} .dot.alert{background:var(--alert)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:999px;white-space:nowrap;color:var(--none);background:color-mix(in srgb,var(--none) 14%,transparent)}
+.pill.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
+.pill.caution{color:var(--caution);background:color-mix(in srgb,var(--caution) 15%,transparent)}
+.pill.alert{color:var(--alert);background:color-mix(in srgb,var(--alert) 14%,transparent)}
+
+/* detail */
+.detail{display:flex;flex-direction:column;gap:16px}
+.detail .lede{max-width:68ch}
+.readings{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.reading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:var(--panel-2);border-radius:7px}
+.reading .v{font-family:var(--f-mono);font-weight:600}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.cols2{grid-template-columns:1fr}}
+.list{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.envnote{padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:.92rem}
+.callbox h3,.selfcare h3{font-size:.95rem}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
+.tile{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel);cursor:pointer;min-width:0}
+.tile:hover{border-color:var(--accent)}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tile.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tile .row{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tile .val{font-family:var(--f-mono);font-size:1.55rem;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .val small{font-size:.75rem;font-weight:500;color:var(--muted);margin-left:3px}
+.tile .meta{font-size:.76rem;color:var(--muted);min-height:1.2em}
+.spark{width:100%;height:30px}
+
+/* chart */
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .band{fill:color-mix(in srgb,var(--ok) 12%,transparent)}
+.chart .band2{fill:color-mix(in srgb,var(--ok) 7%,transparent)}
+.chart .ln{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .ln.s2{stroke:var(--muted);stroke-dasharray:5 4}
+.chart .area{fill:color-mix(in srgb,var(--ink) 6%,transparent)}
+.chart .pt{stroke:var(--panel);stroke-width:1.5}
+.chart .pt.ok{fill:var(--ok)} .chart .pt.caution{fill:var(--caution)} .chart .pt.alert{fill:var(--alert)} .chart .pt.none{fill:var(--none)}
+.chart .lbl{fill:var(--ink);font-weight:600;font-size:12px}
+.chart .today{stroke:var(--accent);stroke-width:1;stroke-dasharray:3 3}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:10px;font-size:.88rem}
+.stats b{font-family:var(--f-mono);font-weight:600}
+.howto{margin-top:12px;padding:10px 12px;background:var(--panel-2);border-radius:8px;font-size:.9rem}
+
+/* routine */
+.tasks{display:flex;flex-direction:column;gap:6px}
+.task{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:7px;background:var(--panel-2)}
+.task .chk{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--figure-line);display:grid;place-items:center;background:var(--panel)}
+.task.done .chk{background:var(--ok);border-color:var(--ok);color:var(--panel)}
+.task.done .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--figure-line)}
+.task .t{font-size:.9rem}
+.task .time{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.task .xpv{font-family:var(--f-mono);font-size:.75rem;color:var(--accent);font-weight:600}
+.task button.chk{cursor:pointer;padding:0}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:.8rem;color:var(--muted)}
+.badge.got{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.badge svg{width:13px;height:13px}
+
+/* flags */
+.flags{display:flex;flex-direction:column;gap:8px}
+.flag{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;padding:10px 12px;border-radius:8px;border:1px solid var(--line)}
+.flag.alert{border-color:color-mix(in srgb,var(--alert) 55%,var(--line));background:color-mix(in srgb,var(--alert) 6%,transparent)}
+.flag.caution{border-color:color-mix(in srgb,var(--caution) 45%,var(--line))}
+.flag .what{font-weight:600}
+.flag .act{grid-column:2;font-size:.9rem;color:var(--muted)}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
+.escalate{padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--alert) 12%,transparent);border:1px solid color-mix(in srgb,var(--alert) 45%,transparent);margin-bottom:12px;font-size:.92rem}
+.escalate b{color:var(--alert)}
+textarea.report{width:100%;min-height:250px;resize:vertical;font-family:var(--f-mono);font-size:.8rem;line-height:1.45;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px}
+
+/* hazards */
+.hazards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.haz{padding:14px;border-radius:9px;background:var(--panel-2);display:flex;flex-direction:column;gap:6px}
+.haz .letter{font-family:var(--f-display);font-weight:700;font-size:1.6rem;color:var(--accent);line-height:1}
+.haz p{font-size:.88rem}
+.haz .watch{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+.disclaimer{font-size:.82rem;color:var(--muted);max-width:90ch}
+
+/* dialog */
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;background:var(--panel);color:var(--ink);width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(8,14,20,.55)}
+.dlg-head{position:sticky;top:0;background:var(--panel);padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:1}
+.dlg-body{padding:16px 20px;display:flex;flex-direction:column;gap:18px}
+.dlg-foot{position:sticky;bottom:0;background:var(--panel);padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+fieldset{border:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+legend{font-family:var(--f-display);font-weight:600;font-size:1rem;padding:0;margin-bottom:8px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.85rem;font-weight:500}
+.field input[type=number],.field textarea{font:inherit;font-family:var(--f-mono);color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+.field textarea{font-family:var(--f-body);min-height:60px}
+.field .hint{font-size:.76rem;color:var(--muted)}
+.field details{font-size:.78rem;color:var(--muted)}
+.field summary{cursor:pointer;color:var(--accent)}
+.moods{display:flex;gap:6px;flex-wrap:wrap}
+.moods label{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;cursor:pointer;font-size:.72rem;min-width:52px}
+.moods input{position:absolute;opacity:0;pointer-events:none}
+.moods label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.moods label:has(input:focus-visible){outline:2px solid var(--accent)}
+.moods .n{font-family:var(--f-mono);font-weight:600;font-size:1rem}
+.symgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.symgrid label{display:flex;gap:8px;align-items:center;font-size:.88rem;padding:6px 8px;border-radius:6px;background:var(--panel-2)}
+.symgrid label.flagged{box-shadow:inset 3px 0 0 var(--alert)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--panel);padding:10px 18px;border-radius:8px;font-weight:500;z-index:50;max-width:calc(100vw - 32px)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap gutter">
+    <div class="brand">
+      <svg class="patch" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="var(--accent)" stroke-width="2"/><path d="M6 19 Q16 9 26 13" fill="none" stroke="var(--ink)" stroke-width="1.6"/><circle cx="21" cy="11.6" r="2.2" fill="var(--accent)"/><path d="M16 9v14M9 16h14" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" transform="rotate(0)" opacity=".9"/></svg>
+      <div>
+        <h1>Crew Health Console</h1>
+        <div class="eyebrow">Self-assessment · CDR-style daily check</div>
+      </div>
+    </div>
+    <div class="daynav" aria-label="Mission day">
+      <button class="iconbtn" id="prevDay" aria-label="Previous mission day">‹</button>
+      <div class="met"><span class="eyebrow">Mission day</span><b id="dayLabel">—</b></div>
+      <button class="iconbtn" id="nextDay" aria-label="Next mission day">›</button>
+    </div>
+    <div class="met">
+      <label class="eyebrow" for="envSel">Environment</label>
+      <select id="envSel"></select>
+    </div>
+    <button class="btn primary" id="openLog">Log measurements</button>
+  </div>
+</header>
+
+<main>
+  <div class="wrap gutter">
+    <div class="sample" id="sampleNote" hidden>
+      <span><b>Sample mission data.</b> 23 days of example readings from a fictional crew member, so you can see how the console behaves.</span>
+      <button class="btn small" id="clearSample">Start my own log</button>
+    </div>
+
+    <section class="banner" aria-live="polite">
+      <div class="light" id="bLight">–</div>
+      <div style="min-width:0">
+        <h2 id="bTitle">—</h2>
+        <p class="sub" id="bSub"></p>
+      </div>
+      <div class="xp">
+        <div style="display:flex;justify-content:space-between;gap:10px"><span class="eyebrow" id="lvlName">Level</span><span class="mono" id="xpVal" style="font-size:.85rem"></span></div>
+        <div class="xpbar"><i id="xpBar" style="width:0"></i></div>
+        <div class="eyebrow" style="margin-top:5px" id="streak"></div>
+      </div>
+    </section>
+
+    <section class="g-body">
+      <div class="panel bodymap">
+        <div class="panel-head" style="width:100%;margin-bottom:0"><h2>Body systems</h2><span class="eyebrow">Tap a region</span></div>
+        <svg class="figure" viewBox="0 0 240 470" role="group" aria-label="Body map">
+          <g class="base">
+            <path d="M78 112 Q58 118 54 152 L44 252 Q42 266 54 266 L62 266 L72 162 Z"/>
+            <path d="M162 112 Q182 118 186 152 L196 252 Q198 266 186 266 L178 266 L168 162 Z"/>
+            <rect x="107" y="90" width="26" height="24" rx="6"/>
+            <path d="M78 110 Q120 98 162 110 L168 256 Q120 268 72 256 Z"/>
+          </g>
+          <ellipse class="region" data-sys="neuro" cx="120" cy="56" rx="32" ry="38"/>
+          <g class="region" data-sys="eyes"><ellipse cx="107" cy="58" rx="7.5" ry="5"/><ellipse cx="133" cy="58" rx="7.5" ry="5"/></g>
+          <g class="region" data-sys="lungs"><path d="M86 124 Q100 116 114 124 L114 184 Q98 192 86 180 Z"/><path d="M154 124 Q140 116 126 124 L126 184 Q142 192 154 180 Z"/></g>
+          <path class="region" data-sys="cardio" d="M127 148 C127 139 141 139 141 150 C141 162 127 170 127 176 C127 170 113 162 113 150 C113 139 127 139 127 148 Z"/>
+          <rect class="region" data-sys="meta" x="88" y="198" width="64" height="50" rx="14"/>
+          <g class="region" data-sys="musc"><rect x="76" y="256" width="38" height="200" rx="16"/><rect x="126" y="256" width="38" height="200" rx="16"/></g>
+        </svg>
+        <div class="syslist" id="sysList"></div>
+      </div>
+      <div class="panel detail" id="detail" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Telemetry</h2><span class="eyebrow" id="teleNote">Select a tile to chart it</span></div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="g-trend">
+      <div class="panel">
+        <div class="panel-head"><h2 id="chartTitle">Trend</h2><span class="eyebrow">Last 21 mission days · green band = target range</span></div>
+        <div style="overflow-x:auto"><svg class="chart" id="chart" viewBox="0 0 660 250" role="img" aria-label="Trend chart"></svg></div>
+        <div class="stats" id="chartStats"></div>
+        <div class="howto" id="chartHow"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Today’s routine</h2><span class="eyebrow" id="routineDay"></span></div>
+        <div class="tasks" id="tasks"></div>
+        <div class="badges" id="badges"></div>
+      </div>
+    </section>
+
+    <section class="g-flags">
+      <div class="panel">
+        <div class="panel-head"><h2>Flags &amp; actions</h2><span class="eyebrow" id="flagCount"></span></div>
+        <div id="escalate"></div>
+        <div class="flags" id="flags"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Report for flight surgeon</h2><button class="btn small" id="copyReport">Copy report</button></div>
+        <textarea class="report" id="report" readonly aria-label="Health report text"></textarea>
+        <p class="muted" style="font-size:.82rem;margin-top:8px">Paste into the private medical conference downlink or the crew medical log.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>The five hazards of spaceflight</h2><span class="eyebrow">NASA Human Research Program · RIDGE</span></div>
+      <div class="hazards" id="hazards"></div>
+    </section>
+
+    <p class="disclaimer">Decision support for crew self-assessment, not a diagnosis. Target ranges are general adult reference values, simplified for quick reading. Your flight surgeon’s individual limits and the onboard medical checklist always take precedence. Radiation, bone-loss and gravity figures are rounded published estimates.</p>
+  </div>
+</main>
+
+<dialog id="logDlg" aria-labelledby="logTitle">
+  <form id="logForm" method="dialog">
+    <div class="dlg-head"><h2 id="logTitle">Log measurements</h2><button type="button" class="iconbtn" id="closeLog" aria-label="Close">✕</button></div>
+    <div class="dlg-body" id="logBody"></div>
+    <div class="dlg-foot"><button type="button" class="btn" id="cancelLog">Cancel</button><button type="submit" class="btn primary">Save to log</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const RANK = {none:0, ok:1, caution:2, alert:3};
+const WORD = {ok:'Nominal', caution:'Watch', alert:'Act now', none:'No data'};
+const worst = arr => arr.reduce((a,b)=> RANK[b]>RANK[a]?b:a, 'none');
+const CAREER_LIMIT = 600; // mSv, NASA career effective dose limit
+const fmt = (v,d=0) => v==null||isNaN(v) ? '—' : Number(v).toFixed(d);
+
+const ENVS = {
+  station:{name:'Low Earth orbit station', g:0, gLabel:'Microgravity', dose:0.5, delay:'under 1 second', far:false, bone:1.2,
+    note:'Inside Earth’s magnetic field. Fluid shifts toward the head; bones and muscles unload. Full medical kit and fast contact with the ground.'},
+  transit:{name:'Deep-space transit vehicle', g:0, gLabel:'Microgravity', dose:1.8, delay:'seconds to 20+ minutes', far:true, bone:1.2,
+    note:'Outside the magnetic field, so galactic cosmic rays dominate dose. Know your storm-shelter location for solar particle events.'},
+  lunar:{name:'Lunar surface base', g:0.17, gLabel:'0.17 g', dose:1.37, delay:'about 1.3 seconds', far:false, bone:0.9,
+    note:'Partial gravity and regolith dust that irritates eyes and lungs. Surface dose measured by Chang’e 4 is about 1.4 mSv/day.'},
+  rover:{name:'Pressurized rover sortie', g:0.17, gLabel:'0.17 g', dose:1.6, delay:'about 1.3 s, relay dependent', far:false, bone:0.9,
+    note:'Thin shielding, tight quarters and limited supplies. Keep sorties within water and sleep plans; return to base if a flag goes red.'},
+  mars:{name:'Mars surface base', g:0.38, gLabel:'0.38 g', dose:0.64, delay:'4 to 24 minutes one way', far:true, bone:0.7,
+    note:'Surface dose measured by Curiosity’s RAD is about 0.64 mSv/day. Ground replies take up to 48 minutes, so the crew acts first.'}
+};
+
+const IND = {
+  hr:{label:'Resting heart rate', short:'Heart rate', unit:'bpm', ok:[50,100], cau:[40,120], dec:0, chart:[35,130], sys:'cardio', step:1,
+    how:'Rest 5 minutes, seated and restrained. Read the chest strap, or count your pulse for 30 seconds and double it. Same time each morning.',
+    act:{caution:'Recheck after 10 minutes of quiet rest. Note caffeine, exercise or stress in the last hour.', alert:'Stop strenuous work and recheck in 5 minutes. If it stays out of range or you feel chest pain, dizziness or palpitations, contact the flight surgeon.'}},
+  sys:{label:'Systolic pressure', short:'Systolic', unit:'mmHg', ok:[90,129], cau:[85,139], dec:0, chart:[70,170], sys:'cardio', step:1},
+  dia:{label:'Diastolic pressure', short:'Diastolic', unit:'mmHg', ok:[60,84], cau:[55,89], dec:0, chart:[40,110], sys:'cardio', step:1},
+  spo2:{label:'Blood oxygen (SpO₂)', short:'SpO₂', unit:'%', ok:[95,100], cau:[92,100], dec:0, chart:[85,100], sys:'lungs', step:1,
+    how:'Clip the pulse oximeter on a warm finger, stay still for 30 seconds and record the steady reading. Remove nail coatings.',
+    act:{caution:'Recheck on another finger. Check cabin CO₂ and O₂ readouts; rest and breathe slowly.', alert:'Below 92% is significant. Go on supplemental oxygen per the medical checklist, check cabin atmosphere, and contact the flight surgeon.'}},
+  temp:{label:'Body temperature', short:'Temperature', unit:'°C', ok:[36.1,37.5], cau:[35.5,38.0], dec:1, chart:[35,39.5], sys:'immune', step:0.1,
+    how:'Use the oral or ear thermometer before eating or exercising. Core temperature in microgravity tends to run slightly higher than on Earth.',
+    act:{caution:'Recheck in an hour. Drink fluids and note any symptoms such as sore throat or chills.', alert:'Possible infection. Isolate where practical, hydrate, log symptoms, and contact the flight surgeon about antipyretics.'}},
+  glu:{label:'Blood glucose', short:'Glucose', unit:'mg/dL', ok:[70,140], cau:[60,180], dec:0, chart:[40,220], sys:'meta', step:1,
+    how:'Fingerstick with the glucometer, ideally fasting before breakfast. Wipe the first drop; capillary blood beads up in microgravity.',
+    act:{caution:'Recheck before your next meal. Review recent meals; spaceflight can reduce insulin sensitivity.', alert:'Below 60: take 15 g fast sugar and recheck in 15 minutes. Above 180: hydrate, recheck in 2 hours, and report to the flight surgeon.'}},
+  sleep:{label:'Sleep last night', short:'Sleep', unit:'h', ok:[7,10], cau:[6,12], dec:1, chart:[3,10], sys:'neuro', step:0.1,
+    how:'Record hours actually asleep from your actigraphy watch, or estimate from lights-out to wake-up minus time awake.',
+    act:{caution:'Protect tonight’s sleep period: dim blue light 2 hours before, use earplugs and eye mask, avoid late caffeine.', alert:'Under 6 hours impairs judgement. Avoid critical tasks such as EVA or robotics if possible, plan a nap, and tell the crew lead.'}},
+  mood:{label:'Mood', short:'Mood', unit:'/5', ok:[4,5], cau:[3,5], dec:0, chart:[1,5], sys:'neuro', step:1,
+    how:'Rate how you have felt over the last 24 hours, from 1 (very low) to 5 (very good). Be honest; nobody else sees this unless you send it.',
+    act:{caution:'Schedule something restorative: a family call, Earth viewing, music, or time with crewmates off-task.', alert:'Low mood is common on long missions and treatable. Talk to a crewmate today and book a private psychological conference.'}},
+  ex:{label:'Exercise', short:'Exercise', unit:'min', ok:[120,600], cau:[60,600], dec:0, chart:[0,180], sys:'musc', step:5,
+    how:'Total minutes of resistive (ARED-type) and aerobic (treadmill, cycle) exercise today. About 2 hours a day protects bone and muscle.',
+    act:{caution:'Add a resistive session focused on hips, spine and legs, the bones that lose density fastest.', alert:'Less than an hour gives little protection to bone or muscle. Rework tomorrow’s schedule with the crew lead.'}},
+  fluid:{label:'Fluid intake', short:'Fluids', unit:'L', ok:[2,4.5], cau:[1.5,5], dec:1, chart:[0,4], sys:'meta', step:0.1,
+    how:'Total drinks plus rehydrated food water. Thirst is weaker in microgravity, so track it rather than relying on feel.',
+    act:{caution:'Drink an extra 0.5 L before sleep period. Dehydration raises kidney-stone risk from bone calcium loss.', alert:'Drink steadily over the next hours and check urine colour. Report if you have flank pain.'}},
+  dose:{label:'Radiation (daily)', short:'Radiation', unit:'mSv', dec:2, sys:'rad', step:0.01,
+    how:'Read your personal dosimeter at the end of the day and enter the daily dose. Compare against the habitat’s area monitor.',
+    act:{caution:'Higher than this habitat’s normal rate. Check space weather alerts and the area monitor; move sleep to the best-shielded area.', alert:'Possible solar particle event. Go to the storm shelter now and follow the radiation contingency procedure.'}},
+  mass:{label:'Body mass', short:'Body mass', unit:'kg', dec:1, sys:'meta', step:0.1,
+    how:'Use the mass-measurement device (spring-oscillation, since scales don’t work in microgravity), after waking and voiding.',
+    act:{caution:'More than 3% loss since launch. Increase calories and protein; check you are finishing meals.', alert:'More than 5% loss. Report to the flight surgeon and review the nutrition plan.'}}
+};
+
+const SYMPTOMS = [
+  {id:'headache',label:'Headache',sys:['neuro','eyes']},
+  {id:'vision',label:'Blurred or changed vision',sys:['eyes'],flag:true},
+  {id:'chest',label:'Chest pain or pressure',sys:['cardio'],flag:true},
+  {id:'breath',label:'Shortness of breath',sys:['lungs'],flag:true},
+  {id:'dizzy',label:'Dizziness or light-headedness',sys:['cardio']},
+  {id:'nausea',label:'Nausea or motion sickness',sys:['meta']},
+  {id:'back',label:'Back pain',sys:['musc']},
+  {id:'congestion',label:'Stuffy head or nose',sys:['lungs','immune']},
+  {id:'rash',label:'Skin rash or irritation',sys:['immune']},
+  {id:'sore',label:'Cold sore or sore throat',sys:['immune']},
+  {id:'fatigue',label:'Unusual fatigue',sys:['neuro','immune']},
+  {id:'low',label:'Feeling low, anxious or isolated',sys:['neuro']}
+];
+const SYM = Object.fromEntries(SYMPTOMS.map(s=>[s.id,s]));
+
+const SYSTEMS = {
+  neuro:{name:'Brain & behavior', keys:['sleep','mood'],
+    fn:'Controls thinking, mood, reaction time and sleep. Small drops in sleep and mood add up to errors on complex tasks.',
+    hazard:'Isolation and confinement, a 90-minute day-night cycle in orbit, noise, workload and distance from family all erode sleep and mood.',
+    self:['Keep a fixed sleep window and dim screens before it','Daylight-spectrum lighting in the morning, warm light at night','Regular private calls home and real time off','Tell a crewmate early when things feel heavy'],
+    call:['Mood at 2 or lower for two days','Under 5 hours of sleep two nights running','Any thoughts of self-harm: tell the crew lead immediately']},
+  eyes:{name:'Eyes & vision', keys:[],
+    fn:'Vision for close work, displays and docking. The optic nerve sits in fluid that is sensitive to pressure changes.',
+    hazard:'In weightlessness fluid shifts toward the head. Many long-duration crew develop optic disc swelling, flattened eyeballs and far-sighted shifts (SANS).',
+    self:['Weekly Amsler grid and near-vision card check','Use the issued adjustable-focus glasses','Report headaches that come with vision changes','Protect eyes from lunar or Martian dust'],
+    call:['Any new blur, distortion, wavy lines or blind spot','Headache with visual symptoms','Eye pain or redness after dust exposure']},
+  cardio:{name:'Heart & vessels', keys:['hr','sys','dia'],
+    fn:'Moves blood, oxygen and heat around the body. Blood pressure shows how hard it is working.',
+    hazard:'Fluid shifts and reduced workload shrink blood volume and can decondition the heart. Expect light-headedness when gravity returns. Radiation may add long-term risk.',
+    self:['Measure at the same time daily after 5 minutes of rest','Keep aerobic exercise in the plan','Limit salt in the menu','Hydrate before landing or high-g events'],
+    call:['Chest pain or pressure','Resting heart rate under 40 or over 120','Blood pressure 140/90 or higher twice','Fainting or near-fainting']},
+  lungs:{name:'Lungs & breathing', keys:['spo2'],
+    fn:'Brings oxygen in and removes carbon dioxide. SpO₂ shows how well the blood is loaded with oxygen.',
+    hazard:'A closed cabin runs higher CO₂ than Earth air, which causes headaches. Dust, off-gassing, fire and toxic leaks are the habitat’s main breathing risks.',
+    self:['Check cabin CO₂ readouts when you get headaches','Keep ventilation clear around your sleep station','Wear a mask when handling dusty suits or regolith'],
+    call:['SpO₂ under 92%','Shortness of breath at rest','Coughing after a smoke, dust or chemical event']},
+  meta:{name:'Nutrition & metabolism', keys:['glu','fluid','mass'],
+    fn:'Turns food and water into energy and keeps tissue repaired. Body mass and glucose show if intake matches need.',
+    hazard:'Appetite drops, food fatigue and busy schedules cause weight loss. Bed-rest and flight studies show reduced insulin sensitivity.',
+    self:['Finish full meals; protein supports muscle','Take vitamin D as prescribed (no sunlight)','Drink at least 2 litres a day','Weigh at the same time each week'],
+    call:['More than 5% body mass lost','Glucose under 60 or over 180 mg/dL','Vomiting that stops you keeping fluids down']},
+  musc:{name:'Bones & muscles', keys:['ex'],
+    fn:'Holds you up and lets you work. Bone stays strong only when it carries load.',
+    hazard:'Without gravity loading, hips and spine lose about 1 to 1.5% of bone density a month, and leg and back muscles shrink. The spine also lengthens and can ache.',
+    self:['About 2 hours of exercise daily, mostly resistive','Load hips, spine and legs: squats, deadlifts, heel raises','Calcium and vitamin D as prescribed','Stretch the lower back after waking'],
+    call:['Sudden bone or joint pain after a fall or impact','Flank pain (possible kidney stone)','Back pain with numbness or weakness in the legs']},
+  immune:{name:'Immune system', keys:['temp'],
+    fn:'Fights infection. Temperature and new rashes or sores are the easiest outward signs.',
+    hazard:'Stress, radiation and poor sleep dampen immunity. Dormant viruses such as herpes and shingles can reactivate, and microbes build up in closed habitats.',
+    self:['Wash hands before meals and after exercise','Clean shared surfaces on schedule','Sleep is an immune countermeasure','Log new rashes or cold sores early'],
+    call:['Temperature over 38.0 °C','A painful band-shaped rash (shingles)','Symptoms in more than one crewmate']},
+  rad:{name:'Radiation exposure', keys:['dose'],
+    fn:'Whole-body dose from galactic cosmic rays and solar events. Dose adds up over a career and raises long-term cancer and other risks.',
+    hazard:'Outside Earth’s magnetic field, dose rates are several times higher than on a space station. Solar particle events can deliver a large dose in hours.',
+    self:['Read your dosimeter daily','Sleep in the best-shielded area','Follow space weather alerts','Know the storm-shelter procedure by heart'],
+    call:['Daily dose far above this habitat’s normal rate','Nausea or vomiting after a solar event','Cumulative dose approaching your mission allocation']}
+};
+const BODY_SYS = ['neuro','eyes','cardio','lungs','meta','musc'];
+const SYS_ORDER = ['neuro','eyes','cardio','lungs','meta','musc','immune','rad'];
+
+const TASKS = [
+  {id:'vitals', label:'Morning vitals: heart rate, BP, SpO₂, temperature', time:'07:30', xp:20, auto:e=>e.hr!=null&&e.sys!=null&&e.spo2!=null&&e.temp!=null},
+  {id:'sleep', label:'Log last night’s sleep', time:'07:30', xp:10, auto:e=>e.sleep!=null},
+  {id:'glu', label:'Fasting glucose fingerstick', time:'07:45', xp:10, auto:e=>e.glu!=null},
+  {id:'mood', label:'Mood check-in', time:'12:00', xp:10, auto:e=>e.mood!=null},
+  {id:'ex', label:'Exercise 120 min, resistive + aerobic', time:'14:00', xp:20, auto:e=>(e.ex||0)>=120},
+  {id:'fluid', label:'Drink at least 2.0 L', time:'all day', xp:10, auto:e=>(e.fluid||0)>=2},
+  {id:'talk', label:'10 min private call or off-task crew time', time:'19:30', xp:10, manual:true},
+  {id:'dose', label:'Read personal dosimeter', time:'21:00', xp:5, auto:e=>e.dose!=null},
+  {id:'amsler', label:'Weekly eye check: Amsler grid + near-vision card', time:'weekly', xp:15, manual:true, weekly:true}
+];
+const LEVELS = ['Candidate','Mission Specialist','Flight Engineer','Pilot','Commander','Mission Veteran'];
+
+/* ---------- state ---------- */
+let state = load() || sample();
+let selSys = 'neuro', selKey = 'sleep';
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function sample(){
+  const r = mulberry(11), n = a => (r()-.5)*2*a, E=[], tasks={};
+  for(let d=1; d<=23; d++){
+    const late = d>=19;
+    const e = {day:d,
+      hr:Math.round(61+n(5)+(late?6:0)), sys:Math.round(117+n(6)+(late?9:0)), dia:Math.round(75+n(4)+(late?5:0)),
+      spo2:Math.round(97.4+n(1.3)), temp:+(36.8+n(.3)).toFixed(1), glu:Math.round(92+n(10)),
+      sleep:+(late? 6.6-(d-19)*.3+n(.15) : 7.3+n(.6)).toFixed(1),
+      mood: late ? 4 - (d>=21?1:0) : (r()>.25?4:5),
+      ex:Math.round(late? 85+n(15) : 130+n(18)), fluid:+(2.3+n(.4)).toFixed(1),
+      dose:+(.48+n(.07)).toFixed(2), mass:+(72 - d*.06 + n(.15)).toFixed(1), sym:[] };
+    if(d===2) e.sym=['nausea'];
+    if(d===3||d===4) e.sym=['congestion','headache'];
+    if(d===14){ e.dose=1.62; }
+    if(d>=20) e.sym=['fatigue'];
+    E.push(e);
+    tasks[d] = {};
+    if(d%3!==0 && d<20) tasks[d].talk=true;
+    if(d===7||d===14) tasks[d].amsler=true;
+  }
+  const t = E[22];
+  delete t.ex; delete t.fluid; delete t.dose; delete t.glu;
+  Object.assign(t,{sleep:5.6, sys:134, dia:86, mood:3, sym:['fatigue','headache'], notes:'Woke twice for a pump alarm.'});
+  return {env:'station', day:23, entries:E, tasks, sample:true};
+}
+function load(){ try{ const s = JSON.parse(localStorage.getItem('crew-health-v1')); return s && s.entries ? s : null }catch(e){ return null } }
+function save(){ try{ localStorage.setItem('crew-health-v1', JSON.stringify(state)) }catch(e){} }
+
+const env = () => ENVS[state.env];
+const entry = d => state.entries.find(e=>e.day===d);
+const today = () => entry(state.day) || {day:state.day, sym:[]};
+const lastDay = () => Math.max(state.day, ...state.entries.map(e=>e.day), 1);
+function baseMass(){ const e = state.entries.find(x=>x.mass!=null); return e ? e.mass : null }
+function cumDose(upTo){ return state.entries.filter(e=>e.day<=upTo && e.dose!=null).reduce((s,e)=>s+e.dose,0) }
+
+/* value lookup: today's, else most recent earlier day */
+function latest(key){
+  const f = key==='bp' ? 'sys' : key;
+  for(let i=state.entries.length-1;i>=0;i--){ const e = state.entries[i]; if(e.day<=state.day && e[f]!=null) return e; }
+  return null;
+}
+function grade(key, v){
+  if(v==null || isNaN(v)) return 'none';
+  if(key==='dose'){ const b=env().dose; return v<=b*1.6?'ok':v<=b*4?'caution':'alert' }
+  if(key==='mass'){ const b=baseMass(); if(!b) return 'ok'; const p=(v-b)/b*100; return p>=-3&&p<=4?'ok':p>=-5&&p<=6?'caution':'alert' }
+  const c = IND[key];
+  if(v>=c.ok[0] && v<=c.ok[1]) return 'ok';
+  if(v>=c.cau[0] && v<=c.cau[1]) return 'caution';
+  return 'alert';
+}
+function gradeEntry(key, e){
+  if(!e) return 'none';
+  if(key==='bp') return e.sys==null ? 'none' : worst([grade('sys',e.sys), grade('dia',e.dia)]);
+  return grade(key, e[key]);
+}
+function domain(key){
+  if(key==='dose'){ const mx = Math.max(env().dose*4, ...state.entries.map(e=>e.dose||0))*1.1; return [0, +mx.toFixed(1)] }
+  if(key==='mass'){ const b = baseMass()||70; return [Math.floor(b*.92), Math.ceil(b*1.03)] }
+  return IND[key].chart;
+}
+function okBand(key){
+  if(key==='dose') return [0, env().dose*1.6];
+  if(key==='mass'){ const b=baseMass()||70; return [b*.97, b*1.04] }
+  return IND[key].ok;
+}
+
+/* ---------- flags ---------- */
+function computeFlags(){
+  const F=[], t=today(), d=state.day;
+  ['hr','sys','dia','spo2','temp','glu','sleep','mood','ex','fluid','dose','mass'].forEach(k=>{
+    if(t[k]==null) return;
+    const g = grade(k,t[k]); if(g==='ok') return;
+    const ind = IND[k], actKey = (k==='sys'||k==='dia') ? null : k;
+    const act = actKey ? ind.act[g] : (g==='alert'
+      ? 'Rest 5 minutes and remeasure with the cuff at heart level. Two readings at 140/90 or above, or any reading with headache or vision change: contact the flight surgeon.'
+      : 'Remeasure tomorrow at the same time. Cut salt, keep aerobic exercise, and watch the 3-day trend.');
+    let val = `${fmt(t[k],ind.dec)} ${ind.unit}`;
+    if(k==='mass'){ const b=baseMass(); val += ` (${fmt((t[k]-b)/b*100,1)}% vs launch)` }
+    F.push({level:g, sys:ind.sys, what:`${ind.label}: ${val}`, act});
+  });
+  (t.sym||[]).forEach(id=>{ const s=SYM[id]; if(!s) return;
+    F.push({level:s.flag?'alert':'caution', sys:s.sys[0], what:`Symptom: ${s.label}`,
+      act: s.flag ? 'Red-flag symptom. Stop current task, tell a crewmate, and contact the flight surgeon now.' : `See ${SYSTEMS[s.sys[0]].name} for self-care. Log it daily; report if it lasts more than 3 days.`}) });
+  const win = (k,n) => state.entries.filter(e=>e.day<=d && e.day>d-n && e[k]!=null).map(e=>e[k]);
+  const avg = a => a.reduce((s,x)=>s+x,0)/a.length;
+  const sl = win('sleep',3); if(sl.length>=3 && avg(sl)<6.5) F.push({level:avg(sl)<5.5?'alert':'caution', sys:'neuro', trend:true, what:`Sleep debt: 3-night average ${fmt(avg(sl),1)} h`, act:'Sleep loss accumulates. Ask the crew lead to protect the next sleep period and move critical tasks if possible.'});
+  const md = win('mood',2); if(md.length>=2 && Math.max(...md)<=2) F.push({level:'alert', sys:'neuro', trend:true, what:'Low mood two days running', act:'Book a private psychological conference and talk to a trusted crewmate today.'});
+  const ex = win('ex',3); if(ex.length>=3 && avg(ex)<100) F.push({level:'caution', sys:'musc', trend:true, what:`Exercise below target: 3-day average ${fmt(avg(ex))} min`, act:'Bone loss is cumulative and hard to reverse. Rebuild the 2-hour daily block this week.'});
+  const sp = win('sys',3); if(sp.length>=3 && avg(sp)>=130) F.push({level:'caution', sys:'cardio', trend:true, what:`Blood pressure trending up: 3-day systolic average ${fmt(avg(sp))} mmHg`, act:'Often linked to poor sleep and stress. Fix sleep first and recheck; report if it passes 140.'});
+  const cd = cumDose(d); if(cd >= CAREER_LIMIT*.5) F.push({level:cd>=CAREER_LIMIT*.8?'alert':'caution', sys:'rad', trend:true, what:`Mission dose ${fmt(cd,0)} mSv (${fmt(cd/CAREER_LIMIT*100)}% of career limit)`, act:'Review shielding and EVA plans with the flight surgeon.'});
+  const lastAmsler = Object.keys(state.tasks).map(Number).filter(x=>x<=d && state.tasks[x].amsler).sort((a,b)=>b-a)[0];
+  if(d>=7 && (lastAmsler==null || d-lastAmsler>=8)) F.push({level:'caution', sys:'eyes', trend:true, what:`Eye check overdue${lastAmsler?` (last on day ${lastAmsler})`:''}`, act:'Do the Amsler grid and near-vision card today. It takes 3 minutes and catches SANS early.'});
+  return F.sort((a,b)=>RANK[b.level]-RANK[a.level]);
+}
+function sysStatus(id, flags){
+  const s = SYSTEMS[id], parts = [];
+  s.keys.forEach(k=>{ const e=latest(k); if(e && e.day>=state.day-2) parts.push(grade(k,e[k])) });
+  flags.forEach(f=>{ if(f.sys===id) parts.push(f.level) });
+  (today().sym||[]).forEach(sid=>{ const sm=SYM[sid]; if(sm && sm.sys.includes(id)) parts.push(sm.flag?'alert':'caution') });
+  if(!parts.length) return id==='eyes' && state.entries.length ? 'ok' : (s.keys.length? 'none' : 'ok');
+  return worst(parts);
+}
+
+/* ---------- gamification ---------- */
+function tasksFor(d){
+  const e = entry(d) || {}, m = state.tasks[d] || {};
+  const lastA = Object.keys(state.tasks).map(Number).filter(x=>x<d && state.tasks[x].amsler).sort((a,b)=>b-a)[0];
+  return TASKS.filter(t=> !t.weekly || m.amsler || lastA==null || d-lastA>=6)
+    .map(t=>({...t, done: t.manual ? !!m[t.id] : t.auto(e)}));
+}
+function progress(){
+  let xp=0; const L=lastDay();
+  for(let d=1; d<=Math.min(state.day,L); d++) tasksFor(d).forEach(t=>{ if(t.done) xp+=t.xp });
+  const core = d => { const e=entry(d)||{}; return TASKS[0].auto(e)&&TASKS[1].auto(e)&&TASKS[3].auto(e) };
+  let streak=0, d=state.day; if(!core(d)) d--;
+  while(d>=1 && core(d)){ streak++; d-- }
+  return {xp, streak};
+}
+function badges(){
+  const E = state.entries.filter(e=>e.day<=state.day);
+  const runOf = pred => { let best=0,cur=0,prev=null; E.forEach(e=>{ if(pred(e)){ cur = (prev===e.day-1)?cur+1:1; best=Math.max(best,cur) } else cur=0; prev=e.day }); return best };
+  const amslers = Object.keys(state.tasks).filter(d=>+d<=state.day && state.tasks[d].amsler).length;
+  return [
+    {name:'First log', got:E.length>0, hint:'Log any measurement'},
+    {name:'7-day vitals streak', got:runOf(TASKS[0].auto)>=7, hint:'Morning vitals 7 days in a row'},
+    {name:'Sleep commander', got:runOf(e=>e.sleep>=7)>=5, hint:'5 nights of 7 h or more'},
+    {name:'Iron on the treadmill', got:runOf(e=>e.ex>=120)>=7, hint:'7 days of 120 min exercise'},
+    {name:'Hydration hero', got:runOf(e=>e.fluid>=2)>=7, hint:'2 L a day for 7 days'},
+    {name:'Sharp eyes', got:amslers>=2, hint:'2 weekly eye checks'}
+  ];
+}
+
+/* ---------- render ---------- */
+function render(){
+  const flags = computeFlags();
+  const statuses = Object.fromEntries(SYS_ORDER.map(id=>[id, sysStatus(id, flags)]));
+  renderTop(); renderBanner(flags, statuses); renderBody(statuses); renderDetail(flags, statuses);
+  renderTiles(); renderChart(); renderRoutine(); renderFlags(flags); renderReport(flags, statuses);
+  save();
+}
+function renderTop(){
+  $('dayLabel').textContent = state.day;
+  $('prevDay').disabled = state.day<=1;
+  $('nextDay').disabled = state.day>=lastDay()+1;
+  $('envSel').value = state.env;
+  $('sampleNote').hidden = !state.sample;
+}
+function renderBanner(flags, st){
+  const overall = worst(Object.values(st));
+  const nA = flags.filter(f=>f.level==='alert').length, nC = flags.filter(f=>f.level==='caution').length;
+  const L = $('bLight'); L.className = 'light '+overall; L.textContent = overall==='ok'?'✓':overall==='alert'?'!':overall==='caution'?'~':'–';
+  $('bTitle').textContent = overall==='ok' ? 'All systems nominal'
+    : overall==='alert' ? `${nA} item${nA>1?'s':''} need action today` : overall==='caution' ? `${nC} item${nC>1?'s':''} to watch` : 'No readings yet for this day';
+  const e = env();
+  $('bSub').textContent = `${e.name} · ${e.gLabel} · Expected dose ${e.dose} mSv/day · Signal delay to ground: ${e.delay}`;
+  const {xp, streak} = progress();
+  const lvl = Math.min(LEVELS.length-1, Math.floor(xp/400));
+  $('lvlName').textContent = `Level ${lvl+1} · ${LEVELS[lvl]}`;
+  $('xpVal').textContent = `${xp} XP`;
+  $('xpBar').style.width = (lvl===LEVELS.length-1 ? 100 : (xp%400)/4) + '%';
+  $('streak').textContent = streak ? `${streak}-day check-in streak` : 'Complete vitals, sleep and mood to start a streak';
+}
+function renderBody(st){
+  document.querySelectorAll('.region').forEach(r=>{
+    const id=r.dataset.sys; r.setAttribute('class', `region ${st[id]} pulse${id===selSys?' sel':''}`);
+    r.setAttribute('tabindex','0'); r.setAttribute('role','button');
+    r.setAttribute('aria-label', `${SYSTEMS[id].name}: ${WORD[st[id]]}`);
+  });
+  $('sysList').innerHTML = SYS_ORDER.map(id=>`<button class="sysbtn${id===selSys?' sel':''}" data-sys="${id}" aria-pressed="${id===selSys}"><span class="dot ${st[id]}"></span><span>${SYSTEMS[id].name}</span></button>`).join('');
+}
+function readingRow(k){
+  const e = latest(k), ind = IND[k];
+  if(!e) return `<div class="reading"><span>${ind.short}</span><span class="pill none">No data</span></div>`;
+  const g = grade(k, e[k]);
+  const stale = e.day<state.day ? ` <span class="muted" style="font-size:.75rem">day ${e.day}</span>` : '';
+  return `<div class="reading"><span>${ind.short}${stale}</span><span><span class="v">${fmt(e[k],ind.dec)}</span> <span class="muted" style="font-size:.8rem">${ind.unit}</span> <span class="dot ${g}" style="display:inline-block;margin-left:4px"></span></span></div>`;
+}
+function renderDetail(flags, st){
+  const s = SYSTEMS[selSys], e = env(), my = flags.filter(f=>f.sys===selSys);
+  let extra = '';
+  if(selSys==='musc'){
+    const rate = e.bone, loss = rate*state.day/30;
+    extra = `<div class="envnote"><b>Bone-density estimate.</b> Without countermeasures, hip and spine density could fall about <b class="mono">${fmt(loss,1)}%</b> by day ${state.day} at ~${rate}%/month in ${e.gLabel.toLowerCase()}.${e.g>0?' Loss rates in partial gravity are not yet measured; this rate is an assumption.':''} Daily resistive exercise cuts this substantially.</div>`;
+  } else if(selSys==='rad'){
+    const cd = cumDose(state.day);
+    extra = `<div class="envnote"><b>Mission dose so far:</b> <span class="mono">${fmt(cd,1)} mSv</span>, ${fmt(cd/CAREER_LIMIT*100,1)}% of NASA’s 600 mSv career limit. At ${e.dose} mSv/day here, a 180-day stay adds about ${fmt(e.dose*180)} mSv.</div>`;
+  } else if(selSys==='eyes'){
+    extra = `<div class="envnote"><b>Weekly check.</b> Look at the centre dot of the Amsler grid with each eye in turn. Wavy lines, gaps or blur are worth reporting. Onboard OCT or fundus imaging is scheduled by the flight surgeon.</div>`;
+  } else {
+    extra = `<div class="envnote"><b>${e.name}.</b> ${e.note}</div>`;
+  }
+  const keys = s.keys.length ? `<div class="readings">${s.keys.map(readingRow).join('')}</div>` : '';
+  const flagHtml = my.length ? `<div class="flags">${my.map(flagHtmlOf).join('')}</div>` : '';
+  $('detail').innerHTML = `
+    <div class="panel-head" style="margin-bottom:0"><h2>${s.name}</h2><span class="pill ${st[selSys]}">${WORD[st[selSys]]}</span></div>
+    <p class="lede">${s.fn}</p>
+    ${keys}
+    ${flagHtml}
+    <p class="lede"><span class="eyebrow" style="display:block;margin-bottom:2px">How spaceflight affects it</span>${s.hazard}</p>
+    ${extra}
+    <div class="cols2">
+      <div class="selfcare"><h3>What you can do</h3><ul class="list">${s.self.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="callbox"><h3>Contact the flight surgeon if</h3><ul class="list">${s.call.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+    </div>`;
+}
+const TILE_KEYS = ['hr','bp','spo2','temp','glu','sleep','mood','ex','fluid','dose','mass'];
+function series(k){ const f = k==='bp'?'sys':k; return state.entries.filter(e=>e.day<=state.day && e[f]!=null) }
+function spark(k){
+  const pts = series(k).slice(-10); if(pts.length<2) return '<svg class="spark" viewBox="0 0 120 30"></svg>';
+  const f = k==='bp'?'sys':k, [lo,hi] = k==='bp'?IND.sys.chart:domain(k);
+  const x = i => 2 + i*(116/(pts.length-1)), y = v => 27 - Math.max(0,Math.min(1,(v-lo)/(hi-lo)))*24;
+  const d = pts.map((e,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(e[f]).toFixed(1)}`).join(' ');
+  const last = pts[pts.length-1];
+  return `<svg class="spark" viewBox="0 0 120 30" aria-hidden="true"><path d="${d} L118 30 L2 30 Z" fill="color-mix(in srgb, var(--ink) 6%, transparent)"/><path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linejoin="round"/><circle cx="${x(pts.length-1)}" cy="${y(last[f])}" r="3" fill="var(--${gradeEntry(k,last)})"/></svg>`;
+}
+function renderTiles(){
+  $('tiles').innerHTML = TILE_KEYS.map(k=>{
+    const e = latest(k), g = gradeEntry(k, e && e.day>=state.day-2 ? e : null);
+    const lab = k==='bp' ? 'Blood pressure' : IND[k].short;
+    let val = '—', unit = k==='bp'?'mmHg':IND[k].unit, meta = 'Not logged yet';
+    if(e){
+      val = k==='bp' ? `${e.sys}/${e.dia ?? '—'}` : fmt(e[k], IND[k].dec);
+      meta = e.day===state.day ? 'Today' : `From day ${e.day}`;
+      if(k==='mass'){ const b=baseMass(); meta += ` · ${(e.mass-b>=0?'+':'')}${fmt((e.mass-b)/b*100,1)}% vs launch` }
+      if(k==='dose') meta += ` · total ${fmt(cumDose(state.day),1)} mSv`;
+      if(k==='mood') unit = '/5';
+    }
+    return `<button class="tile${k===selKey?' sel':''}" data-key="${k}" aria-pressed="${k===selKey}">
+      <div class="row"><span class="eyebrow">${lab}</span><span class="pill ${g}">${WORD[g]}</span></div>
+      <div class="val">${val}<small>${unit}</small></div>
+      ${spark(k)}
+      <div class="meta">${meta}</div></button>`;
+  }).join('');
+}
+function renderChart(){
+  const k = selKey, W=660, H=250, P={l:46,r:56,t:14,b:30};
+  const d1 = state.day, d0 = Math.max(1, d1-20);
+  const defs = k==='bp' ? [{f:'sys',name:'Systolic'},{f:'dia',name:'Diastolic'}] : [{f:k,name:IND[k].short}];
+  const [lo,hi] = k==='bp' ? [40,170] : domain(k);
+  const X = d => P.l + (d-d0)/Math.max(1,d1-d0)*(W-P.l-P.r);
+  const Y = v => P.t + (1-Math.max(0,Math.min(1,(v-lo)/(hi-lo))))*(H-P.t-P.b);
+  const dec = k==='bp'?0:(IND[k].dec ?? 0);
+  let s = '';
+  // bands
+  defs.forEach((df,i)=>{ const b = k==='bp' ? IND[df.f].ok : okBand(k); const y1=Y(Math.min(b[1],hi)), y2=Y(Math.max(b[0],lo)); s += `<rect class="${i?'band2':'band'}" x="${P.l}" y="${y1}" width="${W-P.l-P.r}" height="${Math.max(0,y2-y1)}"/>` });
+  // grid
+  const tickDec = (hi-lo)<=5 && k!=='mood' ? 1 : 0;
+  for(let i=0;i<=4;i++){ const v = lo + (hi-lo)*i/4, y=Y(v); s += `<line class="gl" x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}"/><text x="${P.l-8}" y="${y+4}" text-anchor="end">${fmt(v, k==='dose'?2:tickDec)}</text>` }
+  const span = d1-d0, step = span>14?3:span>7?2:1;
+  for(let d=d0; d<=d1; d+=step) s += `<text x="${X(d)}" y="${H-8}" text-anchor="middle">D${d}</text>`;
+  s += `<line class="today" x1="${X(d1)}" x2="${X(d1)}" y1="${P.t}" y2="${H-P.b}"/>`;
+  defs.forEach((df,i)=>{
+    const pts = state.entries.filter(e=>e.day>=d0 && e.day<=d1 && e[df.f]!=null);
+    if(!pts.length) return;
+    const path = pts.map((e,j)=>`${j?'L':'M'}${X(e.day).toFixed(1)} ${Y(e[df.f]).toFixed(1)}`).join(' ');
+    if(i===0 && pts.length>1) s += `<path class="area" d="${path} L${X(pts[pts.length-1].day).toFixed(1)} ${H-P.b} L${X(pts[0].day).toFixed(1)} ${H-P.b} Z"/>`;
+    s += `<path class="ln${i?' s2':''}" d="${path}"/>`;
+    pts.forEach((e,j)=>{ const last=j===pts.length-1, g=grade(df.f,e[df.f]);
+      s += `<circle class="pt ${g}" cx="${X(e.day)}" cy="${Y(e[df.f])}" r="${last?5.5:3.5}"><title>Day ${e.day} · ${df.name}: ${fmt(e[df.f],dec)} ${k==='bp'?'mmHg':IND[k].unit} (${WORD[g]})</title></circle>` });
+    const le = pts[pts.length-1];
+    s += `<text class="lbl" x="${X(le.day)+9}" y="${Y(le[df.f])+4}">${fmt(le[df.f],dec)}</text>`;
+  });
+  $('chart').innerHTML = s;
+  $('chart').setAttribute('aria-label', `${k==='bp'?'Blood pressure':IND[k].label} over mission days ${d0} to ${d1}`);
+  $('chartTitle').textContent = (k==='bp'?'Blood pressure':IND[k].label) + ' trend';
+  const f = k==='bp'?'sys':k, vals = state.entries.filter(e=>e.day>=d0&&e.day<=d1&&e[f]!=null).map(e=>e[f]);
+  const unit = k==='bp'?'mmHg':IND[k].unit, band = k==='bp' ? `${IND.sys.ok[0]}–${IND.sys.ok[1]} / ${IND.dia.ok[0]}–${IND.dia.ok[1]}` : `${fmt(okBand(k)[0],dec)}–${fmt(okBand(k)[1],dec)}`;
+  $('chartStats').innerHTML = vals.length ? `
+    <span>Average${k==='bp'?' systolic':''} <b>${fmt(vals.reduce((a,b)=>a+b,0)/vals.length, dec||1)}</b> ${unit}</span>
+    <span>Range <b>${fmt(Math.min(...vals),dec)}–${fmt(Math.max(...vals),dec)}</b></span>
+    <span>Target <b>${band}</b> ${unit}</span>
+    <span>Readings <b>${vals.length}</b></span>` : '<span class="muted">No readings in this window yet.</span>';
+  const how = k==='bp' ? 'Rest 5 minutes, restrained in a seat, arm supported at heart level. Take two readings a minute apart and log the second. Fluid shifts in microgravity change blood pressure, so measure at the same time each day.' : IND[k].how;
+  $('chartHow').innerHTML = `<span class="eyebrow">How to measure</span><br>${how}`;
+}
+function renderRoutine(){
+  $('routineDay').textContent = `Mission day ${state.day}`;
+  const list = tasksFor(state.day);
+  $('tasks').innerHTML = list.map(t=>{
+    const chk = t.manual
+      ? `<button class="chk" data-task="${t.id}" aria-pressed="${t.done}" aria-label="Mark ${t.label} ${t.done?'not done':'done'}">${t.done?'✓':''}</button>`
+      : `<span class="chk" title="Completes when you log it">${t.done?'✓':''}</span>`;
+    return `<div class="task${t.done?' done':''}">${chk}<div><div class="t">${t.label}</div><div class="time">${t.time}${t.manual?'':' · auto from log'}</div></div><span class="xpv">+${t.xp}</span></div>`;
+  }).join('');
+  $('badges').innerHTML = badges().map(b=>`<span class="badge${b.got?' got':''}" title="${b.hint}"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1l1.8 3.7 4 .6-2.9 2.8.7 4L7 10.2 3.4 12.1l.7-4L1.2 5.3l4-.6z" fill="${b.got?'var(--accent)':'none'}" stroke="currentColor" stroke-width="1"/></svg>${b.name}</span>`).join('');
+}
+function flagHtmlOf(f){ return `<div class="flag ${f.level}"><span class="pill ${f.level}">${WORD[f.level]}</span><span class="what">${f.what}${f.trend?' <span class="muted" style="font-weight:400;font-size:.8rem">· trend</span>':''}</span><span class="act">${f.act}</span></div>` }
+function renderFlags(flags){
+  const nA = flags.filter(f=>f.level==='alert').length, e = env();
+  $('flagCount').textContent = flags.length ? `${flags.length} open` : '';
+  $('escalate').innerHTML = nA ? `<div class="escalate"><b>Contact the flight surgeon.</b> ${nA} reading${nA>1?'s are':' is'} outside safe limits. Signal delay here is ${e.delay}. ${e.far ? 'Start the onboard medical checklist now; don’t wait for a reply from the ground.' : 'Send the report on the right and follow the onboard checklist while you wait.'}</div>` : '';
+  $('flags').innerHTML = flags.length ? flags.map(flagHtmlOf).join('') : `<div class="empty">Nothing flagged for mission day ${state.day}. Keep up the routine.</div>`;
+}
+function renderReport(flags, st){
+  const t = today(), e = env(), line = k => { const ind=IND[k]; return t[k]==null ? `${ind.short}: not logged` : `${ind.short}: ${fmt(t[k],ind.dec)} ${ind.unit} [${WORD[grade(k,t[k])]}]` };
+  const r = [
+    `CREW HEALTH REPORT · Mission day ${state.day}`,
+    `${e.name} (${e.gLabel}) · overall: ${WORD[worst(Object.values(st))].toUpperCase()}`,
+    '',
+    'VITALS',
+    t.sys!=null ? `BP: ${t.sys}/${t.dia} mmHg [${WORD[gradeEntry('bp',t)]}]` : 'BP: not logged',
+    ...['hr','spo2','temp','glu','sleep','mood','ex','fluid','dose','mass'].map(line),
+    `Mission dose to date: ${fmt(cumDose(state.day),1)} mSv`,
+    '',
+    'SYMPTOMS',
+    (t.sym&&t.sym.length) ? t.sym.map(id=>'- '+SYM[id].label).join('\n') : '- none reported',
+    '',
+    'FLAGS',
+    flags.length ? flags.map(f=>`- [${WORD[f.level]}] ${f.what}`).join('\n') : '- none',
+    '',
+    'SYSTEMS',
+    SYS_ORDER.map(id=>`- ${SYSTEMS[id].name}: ${WORD[st[id]]}`).join('\n'),
+    t.notes ? `\nCREW NOTES\n${t.notes}` : ''
+  ];
+  $('report').value = r.join('\n').trim();
+}
+
+/* ---------- log dialog ---------- */
+function field(k){
+  const ind = IND[k], t = today(), v = t[k] ?? '';
+  const range = k==='dose' ? `Normal here ≤ ${fmt(env().dose*1.6,2)}` : k==='mass' ? 'Launch baseline '+(baseMass()??'—')+' kg' : `Target ${ind.ok[0]}–${ind.ok[1]===600?'+':ind.ok[1]}`;
+  return `<div class="field"><label for="f_${k}">${ind.label} <span class="muted">(${ind.unit})</span></label>
+    <input type="number" id="f_${k}" name="${k}" step="${ind.step}" inputmode="decimal" value="${v}">
+    <span class="hint">${range}</span>
+    ${ind.how ? `<details><summary>How to measure</summary>${ind.how}</details>` : ''}</div>`;
+}
+function openLog(){
+  const t = today();
+  $('logTitle').textContent = `Log measurements · day ${state.day}`;
+  const moods = ['Very low','Low','Okay','Good','Very good'];
+  $('logBody').innerHTML = `
+    <fieldset><legend>Morning vitals</legend><div class="fields">
+      ${field('hr')}
+      <div class="field"><label for="f_sys">Blood pressure <span class="muted">(mmHg)</span></label>
+        <div style="display:flex;gap:6px;align-items:center"><input type="number" id="f_sys" name="sys" step="1" value="${t.sys??''}" aria-label="Systolic"><span>/</span><input type="number" id="f_dia" name="dia" step="1" value="${t.dia??''}" aria-label="Diastolic"></div>
+        <span class="hint">Target 90–129 / 60–84</span>
+        <details><summary>How to measure</summary>Rest 5 minutes restrained in a seat, cuff on the bare upper arm at heart level. Take two readings a minute apart; log the second.</details></div>
+      ${field('spo2')}${field('temp')}${field('glu')}${field('mass')}
+    </div></fieldset>
+    <fieldset><legend>Sleep &amp; mood</legend><div class="fields">${field('sleep')}
+      <div class="field"><span style="font-size:.85rem;font-weight:500">Mood over the last 24 h</span>
+        <div class="moods" role="radiogroup" aria-label="Mood">${moods.map((m,i)=>`<label><input type="radio" name="mood" value="${i+1}" ${t.mood===i+1?'checked':''}><span class="n">${i+1}</span>${m}</label>`).join('')}</div></div>
+    </div></fieldset>
+    <fieldset><legend>Activity &amp; environment</legend><div class="fields">${field('ex')}${field('fluid')}${field('dose')}</div></fieldset>
+    <fieldset><legend>Symptoms today</legend><div class="symgrid">${SYMPTOMS.map(s=>`<label class="${s.flag?'flagged':''}"><input type="checkbox" name="sym" value="${s.id}" ${(t.sym||[]).includes(s.id)?'checked':''}>${s.label}</label>`).join('')}</div>
+      <p class="muted" style="font-size:.8rem">Items marked with a red edge are red-flag symptoms that go straight to the flight surgeon.</p></fieldset>
+    <div class="field"><label for="f_notes">Notes for the flight surgeon</label><textarea id="f_notes" name="notes">${(t.notes||'').replace(/</g,'&lt;')}</textarea></div>`;
+  $('logDlg').showModal();
+}
+function saveLog(ev){
+  ev.preventDefault();
+  const fd = new FormData($('logForm'));
+  let e = entry(state.day); const before = progress().xp;
+  if(!e){ e = {day:state.day, sym:[]}; state.entries.push(e); state.entries.sort((a,b)=>a.day-b.day) }
+  ['hr','sys','dia','spo2','temp','glu','sleep','ex','fluid','dose','mass'].forEach(k=>{ const raw = fd.get(k); if(raw===null||raw==='') delete e[k]; else { const n = parseFloat(raw); if(!isNaN(n)) e[k]=n } });
+  const m = fd.get('mood'); if(m) e.mood = +m;
+  e.sym = fd.getAll('sym');
+  const notes = (fd.get('notes')||'').trim(); if(notes) e.notes = notes; else delete e.notes;
+  $('logDlg').close();
+  render();
+  const gain = progress().xp - before;
+  toast(`Saved to mission day ${state.day}${gain>0?` · +${gain} XP`:''}`);
+}
+let toastT;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 2600) }
+
+/* ---------- hazards ---------- */
+$('hazards').innerHTML = [
+  ['R','Space radiation','Galactic cosmic rays and solar particle events damage cells and DNA. Raises long-term cancer risk and can affect the nervous system and heart.','Watch: daily dose, cumulative dose'],
+  ['I','Isolation & confinement','Small crews in small volumes for months. Affects sleep, mood, teamwork and decision-making.','Watch: sleep, mood, private calls'],
+  ['D','Distance from Earth','No quick return and growing signal delay. The crew must diagnose and treat with what is onboard.','Watch: report readiness, medical kit'],
+  ['G','Gravity fields','Weightlessness and partial gravity unload bones and muscles and shift fluids toward the head. Returning to gravity brings dizziness.','Watch: exercise, BP, eyes, body mass'],
+  ['E','Hostile closed environment','Recycled air with higher CO₂, noise, microbes, dust and toxic leaks. Small changes affect everyone onboard.','Watch: SpO₂, temperature, symptoms']
+].map(([l,n,p,w])=>`<div class="haz"><span class="letter">${l}</span><h3>${n}</h3><p>${p}</p><span class="watch">${w}</span></div>`).join('');
+
+/* ---------- events ---------- */
+$('envSel').innerHTML = Object.entries(ENVS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+$('envSel').addEventListener('change', e=>{ state.env = e.target.value; render() });
+$('prevDay').addEventListener('click', ()=>{ state.day=Math.max(1,state.day-1); render() });
+$('nextDay').addEventListener('click', ()=>{ state.day=Math.min(lastDay()+1,state.day+1); render() });
+$('openLog').addEventListener('click', openLog);
+$('closeLog').addEventListener('click', ()=>$('logDlg').close());
+$('cancelLog').addEventListener('click', ()=>$('logDlg').close());
+$('logForm').addEventListener('submit', saveLog);
+const pickSys = id => { selSys = id; const k = SYSTEMS[id].keys[0]; if(k) selKey = (k==='sys'||k==='dia')?'bp':k; render() };
+document.querySelector('.figure').addEventListener('click', ev=>{ const r = ev.target.closest('.region'); if(r) pickSys(r.dataset.sys) });
+document.querySelector('.figure').addEventListener('keydown', ev=>{ const r = ev.target.closest('.region'); if(r && (ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); pickSys(r.dataset.sys) } });
+$('sysList').addEventListener('click', ev=>{ const b = ev.target.closest('.sysbtn'); if(b) pickSys(b.dataset.sys) });
+$('tiles').addEventListener('click', ev=>{ const b = ev.target.closest('.tile'); if(!b) return; selKey=b.dataset.key; const s = IND[selKey==='bp'?'sys':selKey].sys; if(s) selSys = s; render() });
+$('tasks').addEventListener('click', ev=>{ const b = ev.target.closest('button[data-task]'); if(!b) return;
+  const m = state.tasks[state.day] = state.tasks[state.day] || {}; m[b.dataset.task] = !m[b.dataset.task];
+  const t = TASKS.find(x=>x.id===b.dataset.task); render(); if(m[b.dataset.task]) toast(`${t.label.split(':')[0]} done · +${t.xp} XP`) });
+$('copyReport').addEventListener('click', ()=>{
+  const ta = $('report');
+  const fallback = () => { ta.focus(); ta.select(); toast('Report selected. Press Ctrl+C to copy.') };
+  try{ navigator.clipboard.writeText(ta.value).then(()=>toast('Report copied'), fallback) }catch(e){ fallback() }
+});
+let clearArmed = false;
+$('clearSample').addEventListener('click', ev=>{
+  if(!clearArmed){ clearArmed=true; ev.target.textContent='Click again to clear sample data'; setTimeout(()=>{ clearArmed=false; ev.target.textContent='Start my own log' },4000); return }
+  state = {env:state.env, day:1, entries:[], tasks:{}, sample:false}; selSys='neuro'; selKey='sleep'; render(); toast('Sample data cleared. Log your first measurements.');
+});
+
+render();
+})();
+</script>
+</body>
+</html>
