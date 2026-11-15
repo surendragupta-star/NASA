@@ -48,7 +48,4 @@ Plain HTML, CSS and JavaScript with no frameworks or dependencies besides Google
 ## Limitations
 
 This is decision support for crew self-assessment, not a medical diagnosis. Target ranges are simplified general adult reference values; a real deployment would use each crew member's baseline and limits set by their flight surgeon. Bone-loss rates in partial gravity are not yet measured, so the Moon and Mars rates are assumptions.
-
-## Use of AI
-
-Built with help from Claude (Anthropic) as a coding assistant. The team chose the indicators, thresholds, features and health content and is responsible for them.
+.
