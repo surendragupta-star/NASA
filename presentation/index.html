@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crew Health Console – Demo Slides</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0;background:#070B10;color:#DCE4EC;font-family:'IBM Plex Sans',Arial,sans-serif}
+.top{max-width:1280px;margin:0 auto;padding:28px 16px 4px}
+.top h1{font-family:'Chakra Petch',Arial,sans-serif;font-size:28px;margin:0 0 6px}
+.top p{margin:0;color:#9FB0C0}
+.top a{color:#EE7A3F}
+.frame{width:calc(100% - 32px);max-width:1280px;margin:24px auto 10px;aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.5)}
+.frame section{position:absolute;top:0;left:0;width:1920px;height:1080px;box-sizing:border-box;transform-origin:0 0}
+.frame section *{box-sizing:border-box}
+.frame h1,.frame h2,.frame h3,.frame p{margin:0}
+.frame ul{margin:0}
+.frame aside{display:none}
+.frame table{border-collapse:collapse;width:100%}
+.frame th,.frame td{text-align:left;padding:.35em .6em;border-bottom:1px solid #2A3846}
+.notes{max-width:1280px;margin:0 auto 32px;padding:0 16px;color:#9FB0C0;font-size:15px;line-height:1.55}
+.notes b{color:#DCE4EC}
+body { font-family: 'IBM Plex Sans', Arial, sans-serif; }
+section { counter-increment: page; background: #0E1620; color: #DCE4EC; padding: 128px 128px 160px; display: flex; flex-direction: column; gap: 48px; font-family: 'IBM Plex Sans', Arial, sans-serif; }
+section.light { background: #EEF2F5; color: #1B2733; }
+section.cover { padding: 128px; justify-content: center; }
+
+.eyebrow { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: #EE7A3F; }
+section.light .eyebrow { color: #B0461A; }
+h1 { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 128px; font-weight: 700; line-height: 1.02; color: #F4F7FA; }
+h2 { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 64px; font-weight: 600; line-height: 1.1; color: #F4F7FA; }
+section.light h2 { color: #13202C; }
+h3 { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 36px; font-weight: 600; line-height: 1.15; color: #F4F7FA; }
+section.light h3 { color: #13202C; }
+.body { font-size: 32px; line-height: 1.45; color: #B4C3D1; }
+section.light .body { color: #435468; }
+.small { font-size: 24px; line-height: 1.4; color: #8FA1B3; }
+section.light .small { color: #56677A; }
+.head { display: flex; flex-direction: column; gap: 16px; }
+
+.foot { position: absolute; left: 128px; bottom: 64px; width: 1664px; display: flex; justify-content: space-between; }
+.foot .fl { font-size: 24px; color: #7F92A6; }
+section.light .foot .fl { color: #5F7084; }
+.pg::after { content: counter(page) " / 7"; }
+
+.cards { display: grid; gap: 24px; }
+.c5 { grid-template-columns: repeat(5, 1fr); }
+.c3 { grid-template-columns: repeat(3, 1fr); }
+.c2 { grid-template-columns: repeat(2, 1fr); }
+.card { background: #FBFCFD; border: 1px solid #D3DCE5; border-radius: 12px; padding: 32px; display: flex; flex-direction: column; gap: 14px; }
+.card.dk { background: #16212D; border: 1px solid #283545; }
+.letter { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 64px; font-weight: 700; line-height: 1; color: #B0461A; }
+.ct { font-size: 26px; line-height: 1.4; color: #435468; }
+.card.dk .ct { color: #B4C3D1; }
+.q { font-family: 'Chakra Petch', Arial, sans-serif; font-size: 28px; font-weight: 600; color: #EE7A3F; }
+
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.chip { font-size: 24px; padding: 8px 18px; border-radius: 999px; background: #1C2836; color: #DCE4EC; }
+.st { font-size: 24px; font-weight: 600; padding: 8px 18px; border-radius: 999px; }
+.st.ok { background: #173A2C; color: #5FD39E; }
+.st.cau { background: #3D2F14; color: #F0BC5E; }
+.st.alt { background: #40201F; color: #F5847E; }
+section.light .st.ok { background: #D3EEE0; color: #145E3E; }
+section.light .st.cau { background: #F6E6C6; color: #7A4C08; }
+section.light .st.alt { background: #F7D9D7; color: #9B2420; }
+
+.split { display: grid; grid-template-columns: 400px 1fr; gap: 88px; align-items: center; }
+.stack { display: flex; flex-direction: column; gap: 28px; }
+.feat { display: flex; flex-direction: column; gap: 8px; }
+
+.tbl { font-size: 28px; color: #DCE4EC; }
+.tbl .hd { background: #1C2836; }
+.tbl .red { color: #F5847E; }
+
+.tasks { font-size: 26px; line-height: 1.55; color: #435468; padding-left: 32px; }
+.mono { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 24px; line-height: 1.5; color: #1B2733; }
+.links { font-size: 26px; color: #DCE4EC; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+.cards .card { animation: rise 500ms ease-out both; animation-delay: calc(var(--i, 0) * 110ms); }
+</style>
+</head>
+<body>
+<div class="top"><h1>Crew Health Console · Demo slides</h1><p>Team SURENDRA · <a href="../index.html">Open the live app</a> · Speaker notes appear under each slide.</p></div>
+<div class="frame">
+<section id="cover" class="cover" data-transition="fade">
+<svg aria-label="A planet with an orbiting spacecraft and a heartbeat line crossing its orbit" style="position:absolute;left:1140px;top:210px" width="660" height="660" viewBox="0 0 660 660"><defs><radialGradient id="pl" cx="0.38" cy="0.35" r="0.75"><stop offset="0" stop-color="#3A5874"/><stop offset="1" stop-color="#132232"/></radialGradient></defs><circle cx="330" cy="330" r="170" fill="url(#pl)"/><ellipse cx="330" cy="330" rx="300" ry="96" fill="none" stroke="#3B4D60" stroke-width="2" transform="rotate(-18 330 330)"/><polyline points="20,392 170,392 200,350 228,440 262,282 292,420 318,392 640,392" fill="none" stroke="#EE7A3F" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="604" cy="242" r="12" fill="#EE7A3F"/><circle cx="604" cy="242" r="24" fill="none" stroke="#EE7A3F" stroke-width="2" opacity="0.5"/><circle cx="80" cy="90" r="3" fill="#8FA1B3"/><circle cx="560" cy="70" r="2" fill="#8FA1B3"/><circle cx="610" cy="560" r="3" fill="#8FA1B3"/><circle cx="120" cy="590" r="2" fill="#8FA1B3"/><circle cx="430" cy="610" r="2" fill="#8FA1B3"/></svg>
+<div class="head" style="width:980px;gap:32px">
+<p class="eyebrow">NASA Space Apps Challenge · Astronaut health</p>
+<h1>Crew Health Console</h1>
+<p class="body" style="font-size:36px">Self-assessment software that helps astronauts spot health changes on long missions and know when to act.</p>
+<p class="small">Team SURENDRA · Demo: surendragupta-star.github.io/NASA</p>
+</div>
+<aside>Hi, we are team SURENDRA. This is Crew Health Console, our answer to the challenge “Create Health Monitoring Software for Astronauts on Space Missions.” It helps astronauts check their own health during long missions, understand what the results mean in space, and decide whether to handle a problem themselves or call a flight surgeon.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="challenge" class="light" data-transition="fade">
+<div class="head">
+<p class="eyebrow">The challenge</p>
+<h2>Far from Earth, astronauts must be their own first responders</h2>
+</div>
+<div class="cards c5">
+<div class="card" style="--i:0"><p class="letter">R</p><h3>Radiation</h3><p class="ct">Cosmic rays and solar storms damage cells and raise long-term cancer risk.</p></div>
+<div class="card" style="--i:1"><p class="letter">I</p><h3>Isolation</h3><p class="ct">Months in a small space wear down sleep, mood and teamwork.</p></div>
+<div class="card" style="--i:2"><p class="letter">D</p><h3>Distance</h3><p class="ct">No quick trip home, and help from Earth arrives with a delay.</p></div>
+<div class="card" style="--i:3"><p class="letter">G</p><h3>Gravity</h3><p class="ct">Bones and muscles weaken, fluids shift to the head and affect the eyes.</p></div>
+<div class="card" style="--i:4"><p class="letter">E</p><h3>Environment</h3><p class="ct">Recycled air, high CO₂, microbes and dust affect the whole crew.</p></div>
+</div>
+<p class="body">On Mars, a question to a flight surgeon can take up to <b>48 minutes</b> to get an answer.</p>
+<div class="foot"><p class="fl">Crew Health Console · NASA’s five hazards of human spaceflight</p><p class="fl pg"></p></div>
+<aside>NASA’s Human Research Program describes five hazards of spaceflight: radiation, isolation and confinement, distance from Earth, altered gravity, and a hostile closed environment. Together they cause bone loss, heart and blood-pressure changes, vision problems, a weaker immune system, poor sleep and low mood. The farther a crew goes, the longer help takes. On Mars, a reply from a flight surgeon can take up to 48 minutes, so astronauts must be able to check themselves and act.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="solution" data-transition="fade">
+<div class="head">
+<p class="eyebrow">Our solution</p>
+<h2>One console that answers three questions every day</h2>
+</div>
+<div class="cards c3">
+<div class="card dk" style="--i:0"><p class="q">How am I doing?</p><p class="ct">Log 11 indicators measured with standard onboard kit. Each reading is graded at a glance.</p></div>
+<div class="card dk" style="--i:1"><p class="q">Why does it matter up here?</p><p class="ct">Plain-language notes explain how spaceflight affects each body system and how to measure correctly.</p></div>
+<div class="card dk" style="--i:2"><p class="q">Should I act or call the ground?</p><p class="ct">Every flag comes with a specific action and a clear point at which to contact the flight surgeon.</p></div>
+</div>
+<div class="row">
+<p class="chip">Heart rate</p><p class="chip">Blood pressure</p><p class="chip">SpO₂</p><p class="chip">Temperature</p><p class="chip">Glucose</p><p class="chip">Sleep</p><p class="chip">Mood</p><p class="chip">Exercise</p><p class="chip">Fluids</p><p class="chip">Radiation dose</p><p class="chip">Body mass</p>
+</div>
+<div class="row"><p class="st ok">Nominal</p><p class="st cau">Watch</p><p class="st alt">Act now</p><p class="small">Every status shows as a color and a word.</p></div>
+<div class="foot"><p class="fl">Crew Health Console · How it works</p><p class="fl pg"></p></div>
+<aside>Crew Health Console answers three questions. How am I doing? Astronauts log 11 indicators that standard onboard equipment can measure, from heart rate and blood pressure to sleep, mood, radiation dose and body mass, plus any symptoms. Why does it matter up here? Every field and body system has plain-language explanations. Should I act or call the ground? Each reading is graded Nominal, Watch or Act now, and every flag comes with a specific next step.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="bodymap" class="light" data-transition="fade">
+<div class="split">
+<svg aria-label="Body map: head colored red for brain and behavior, heart and legs amber, eyes, lungs and abdomen green" width="360" height="705" viewBox="0 0 240 470"><g fill="#D5DCE4" stroke="#A9B5C2" stroke-width="1.2"><path d="M78 112 Q58 118 54 152 L44 252 Q42 266 54 266 L62 266 L72 162 Z"/><path d="M162 112 Q182 118 186 152 L196 252 Q198 266 186 266 L178 266 L168 162 Z"/><rect x="107" y="90" width="26" height="24" rx="6"/><path d="M78 110 Q120 98 162 110 L168 256 Q120 268 72 256 Z"/></g><g stroke="#8E9BA9" stroke-width="1.2"><ellipse cx="120" cy="56" rx="32" ry="38" fill="#E8736C"/><ellipse cx="107" cy="58" rx="7.5" ry="5" fill="#6CC79C"/><ellipse cx="133" cy="58" rx="7.5" ry="5" fill="#6CC79C"/><path d="M86 124 Q100 116 114 124 L114 184 Q98 192 86 180 Z" fill="#6CC79C"/><path d="M154 124 Q140 116 126 124 L126 184 Q142 192 154 180 Z" fill="#6CC79C"/><path d="M127 148 C127 139 141 139 141 150 C141 162 127 170 127 176 C127 170 113 162 113 150 C113 139 127 139 127 148 Z" fill="#E9B451"/><rect x="88" y="198" width="64" height="50" rx="14" fill="#6CC79C"/><rect x="76" y="256" width="38" height="200" rx="16" fill="#E9B451"/><rect x="126" y="256" width="38" height="200" rx="16" fill="#E9B451"/></g></svg>
+<div class="stack">
+<div class="head">
+<p class="eyebrow">Body map &amp; telemetry</p>
+<h2>Tap the body to see what needs attention</h2>
+</div>
+<div class="feat"><h3>Interactive body map</h3><p class="ct">Each region takes the color of its worst reading, symptom or trend. Tap it for what the system does, self-care steps and when to call the ground.</p></div>
+<div class="feat"><h3>Tiles and 21-day trends</h3><p class="ct">Every indicator has a status, a mini chart and a trend chart with the healthy range shaded.</p></div>
+<div class="feat"><h3>Trend flags</h3><p class="ct">Catches slow problems: sleep debt, rising blood pressure, low exercise, weight loss and radiation dose against NASA’s 600 mSv limit.</p></div>
+<div class="row"><p class="st alt">Brain: 5.6 h sleep</p><p class="st cau">Heart: BP 134/86</p><p class="st cau">Bones: low exercise</p></div>
+</div>
+</div>
+<div class="foot"><p class="fl">Crew Health Console · Sample mission day 23</p><p class="fl pg"></p></div>
+<aside>Here is the heart of the app: a body map. Each region is colored by its worst current reading, symptom or trend. In this sample on mission day 23, the head is red because the astronaut slept only 5.6 hours, the heart is amber because blood pressure is creeping up, and the legs are amber because exercise has dropped. Tapping a region explains what that system does, how spaceflight affects it, what to do, and when to call a flight surgeon. Tiles and 21-day charts show each indicator, and trend checks catch slow problems that one reading would miss.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="mission" data-transition="fade">
+<div class="head">
+<p class="eyebrow">Mission-aware guidance</p>
+<h2>The same reading gets different advice on the Moon or Mars</h2>
+</div>
+<table class="tbl">
+<tr class="hd"><th style="width:26%">Setting</th><th style="width:15%">Gravity</th><th style="width:16%">Dose per day</th><th style="width:17%">Signal delay</th><th style="width:26%">If a flag goes red</th></tr>
+<tr><td>Earth-orbit station</td><td>Microgravity</td><td>~0.5 mSv</td><td>Under 1 s</td><td>Send report, follow ground</td></tr>
+<tr><td>Deep-space transit</td><td>Microgravity</td><td>~1.8 mSv</td><td>Up to 20+ min</td><td class="red">Start onboard checklist now</td></tr>
+<tr><td>Lunar base</td><td>0.17 g</td><td>~1.4 mSv</td><td>~1.3 s</td><td>Send report, follow ground</td></tr>
+<tr><td>Lunar rover sortie</td><td>0.17 g</td><td>~1.6 mSv (est.)</td><td>~1.3 s</td><td>Return to base</td></tr>
+<tr><td>Mars base</td><td>0.38 g</td><td>~0.64 mSv</td><td>4–24 min</td><td class="red">Start onboard checklist now</td></tr>
+</table>
+<p class="small">Sources: NASA Human Research Program · Curiosity RAD (Zeitlin 2013, Hassler 2014) · Chang’e 4 lunar lander (Zhang 2020)</p>
+<div class="foot"><p class="fl">Crew Health Console · Environment settings</p><p class="fl pg"></p></div>
+<aside>The console knows where the crew is. Pick a space station, deep-space transit, a lunar base, a rover or a Mars base, and it adjusts the expected radiation dose, gravity, bone-loss estimate and signal delay. The escalation advice changes too. Near Earth, the crew sends the report and follows the ground. On Mars, where replies take up to 48 minutes, the console tells the crew to start the onboard medical checklist right away. Radiation rates come from NASA research and from measurements by the Curiosity rover and the Chang’e 4 lander.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="routine" class="light" data-transition="fade">
+<div class="head">
+<p class="eyebrow">Built for daily use</p>
+<h2>A routine that rewards itself and a report in one click</h2>
+</div>
+<div class="cards c2">
+<div class="card" style="--i:0">
+<h3>Today’s routine</h3>
+<ul class="tasks">
+<li>07:30 Morning vitals · +20 XP</li>
+<li>07:45 Fasting glucose · +10 XP</li>
+<li>12:00 Mood check-in · +10 XP</li>
+<li>14:00 Exercise 120 min · +20 XP</li>
+<li>Weekly Amsler grid eye check · +15 XP</li>
+</ul>
+<p class="ct">Tasks tick themselves off as data is logged. Points, levels, streaks and badges keep the habit going.</p>
+</div>
+<div class="card" style="--i:1">
+<h3>Report for flight surgeon</h3>
+<p class="mono">CREW HEALTH REPORT · Mission day 23<br>Earth-orbit station · overall: ACT NOW<br>BP: 134/86 mmHg [Watch]<br>Sleep: 5.6 h [Act now]<br>Mood: 3 /5 [Watch]<br>FLAGS<br>- Sleep debt: 3-night average 5.9 h<br>- Blood pressure trending up</p>
+<p class="ct">One click copies a structured summary for the ground team.</p>
+</div>
+</div>
+<div class="foot"><p class="fl">Crew Health Console · Gamification and reporting</p><p class="fl pg"></p></div>
+<aside>Health only helps if it becomes a habit. A timed daily checklist covers vitals, glucose, mood, two hours of exercise, fluids, a dosimeter reading, a private call home and a weekly eye check. Tasks tick off automatically as data comes in, earning points, levels, streaks and badges. When something needs the ground, one click produces a structured report of the day’s vitals, symptoms and flags for the flight surgeon.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<div class="frame">
+<section id="impact" data-transition="fade">
+<div class="head">
+<p class="eyebrow">Impact &amp; next steps</p>
+<h2>Catch problems early and act with confidence, anywhere</h2>
+</div>
+<div class="cards c3">
+<div class="card dk" style="--i:0"><h3>Impact</h3><p class="ct">Early warning on slow declines. Clear decisions on when to call the ground. Also useful at Antarctic stations, in submarines and on analog missions.</p></div>
+<div class="card dk" style="--i:1"><h3>Built with</h3><p class="ct">HTML, CSS and JavaScript with SVG graphics. One file, no server, works offline. Grounded in NASA Human Research Program data.</p></div>
+<div class="card dk" style="--i:2"><h3>Next</h3><p class="ct">Connect wearables and onboard devices, add camera eye and skin checks, a crew view for the commander, and personal limits from flight surgeons.</p></div>
+</div>
+<p class="links">Live demo: surendragupta-star.github.io/NASA<br>Code: github.com/surendragupta-star/NASA</p>
+<div class="foot"><p class="fl">Crew Health Console · Thank you</p><p class="fl pg"></p></div>
+<aside>Crew Health Console turns scattered measurements into a clear picture, catches slow declines before they become emergencies, and gives astronauts the confidence to act when help is far away. It is a single offline web page built with HTML, CSS and JavaScript and grounded in NASA data. Next, we would connect wearables and onboard devices, add camera-based eye and skin checks, a crew overview for the commander, and personal limits set by flight surgeons. Thank you. The live demo and code are linked on screen.</aside>
+</section>
+</div>
+<p class="notes"></p>
+<script>
+(function(){
+  var frames=document.querySelectorAll('.frame');
+  frames.forEach(function(f,i){var a=f.querySelector('aside');var n=f.nextElementSibling;if(a&&n){n.innerHTML='<b>Slide '+(i+1)+' notes.</b> ';n.appendChild(document.createTextNode(a.textContent));}});
+  function fit(){frames.forEach(function(f){var s=f.querySelector('section');s.style.transform='scale('+(f.clientWidth/1920)+')';});}
+  window.addEventListener('resize',fit);fit();
+})();
+</script>
+</body>
+</html>

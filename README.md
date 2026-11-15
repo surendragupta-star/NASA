@@ -2,7 +2,16 @@
 
 Health monitoring software that helps astronauts check their own health on long space missions and decide what to do next.
 
-Built for the challenge **Create Health Monitoring Software for Astronauts on Space Missions**.
+Built by **Team SURENDRA** for the challenge **Create Health Monitoring Software for Astronauts on Space Missions**.
+
+## Repository contents
+
+| Path | What it is |
+|---|---|
+| `index.html` | The Crew Health Console app (single file) |
+| `presentation/index.html` | 7-slide demo presentation with speaker notes |
+| `presentation/source/` | Slide source files (HTML, CSS, JSON) |
+| `docs/SUBMISSION.md` | Submission text: summary, project details, data and resources |
 
 ## Run it
 
